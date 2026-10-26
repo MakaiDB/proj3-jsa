@@ -80,36 +80,40 @@
 <br />
 <div class="row">
   <div class="col-xs-6 text-center">
-  <form id="entry" method="POST" action="/_check">
+    <form id="entry">
     <label for="attempt">Word:</label>
     <input id="attempt" name="attempt" type="text" width="15"
-      autocomplete="off"  autofocus />
-    <input type="submit" name="try" />
+      autocomplete="off" autofocus />
   </form>
 </div></div>
 
 <br />
 
-{% if session.matches|length is not equalto 0  %}
-<h2>You found </h2>
+<h2>You found</h2>
 <p id="results">
-  {% for match in session.matches %}
-  {{ match }} 
-  {% endfor %}
+  {% for match in session.matches %}{{ match }} {% endfor %}
 </p>
-{% endif %}
+<div id="message"></div>
+<script>
+$("#entry").submit(function (event) { event.preventDefault(); });
 
+$("#attempt").keyup(function (event) {
+  var txt = $("#attempt").val();
+  var letter = String.fromCharCode(event.which);
+  if (!"ABCDEFGHIJKLMNOPQRSTUVWXYZ".includes(letter)) { return; }
 
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <!-- Mismatch, already found, etc. "flashed" from Python -->
-    {% for message in messages %}
-      <p class="message">{{ message }}</p>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
-
-
-
+  $.getJSON("/_check", { text: txt }, function (data) {
+    var r = data.result;
+    if (r.new_match) {
+      $("#results").text(r.matches.join(" "));
+      $("#attempt").val("");
+      $("#message").text("");
+    } else if (r.already) {
+      $("#message").text("You already found " + txt);
+    }
+    if (r.done) { window.location = "/success"; }
+  });
+});
+</script>
  </div> <!-- container -->
 </body> </html>
